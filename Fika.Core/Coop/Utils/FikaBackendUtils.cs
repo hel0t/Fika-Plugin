@@ -4,7 +4,6 @@ using Fika.Core.Networking.Http;
 using Fika.Core.Networking.Http.Models;
 using System;
 using System.Reflection;
-using Fika.Core.EssentialPatches;
 
 namespace Fika.Core.Coop.Utils
 {
@@ -12,11 +11,12 @@ namespace Fika.Core.Coop.Utils
     {
         public static MatchMakerAcceptScreen MatchMakerAcceptScreenInstance;
         public static Profile Profile;
-        public static string PMCName;
+        public static string PmcName;
         public static EMatchingType MatchingType = EMatchingType.Single;
-        public static bool IsServer => MatchingType == EMatchingType.GroupLeader;
-        public static bool IsClient => MatchingType == EMatchingType.GroupPlayer;
+        public static bool IsServer => Profile.ProfileId == _serverId;
+        public static bool IsClient => MatchingType is EMatchingType.GroupPlayer or EMatchingType.GroupLeader;
         public static bool IsSinglePlayer => MatchingType == EMatchingType.Single;
+        
         public static PlayersRaidReadyPanel PlayersRaidReadyPanel;
         public static MatchMakerGroupPreview MatchMakerGroupPreview;
         public static int HostExpectedNumberOfPlayers = 1;
@@ -90,10 +90,9 @@ namespace Fika.Core.Coop.Utils
 
             FikaRequestHandler.RaidCreate(body);
 
-            SetRaidCode(raidCode);
             SetServerId(profileId);
             MatchingType = EMatchingType.GroupLeader;
-            
+
             SetRaidCode(raidCode);
         }
 
