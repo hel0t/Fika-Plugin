@@ -338,7 +338,7 @@ namespace Fika.Core.Coop.GameMode
             string furthestBot = string.Empty;
             furthestDistance = 0f;
 
-            foreach (var botKeyValuePair in Bots)
+            foreach (KeyValuePair<string,Player> botKeyValuePair in Bots)
             {
                 if (IsInvalidBotForDespawning(botKeyValuePair))
                 {
@@ -707,12 +707,14 @@ namespace Fika.Core.Coop.GameMode
                 {
                     SetStatusModel status = new(coopHandler.MyPlayer.ProfileId, LobbyEntry.ELobbyStatus.IN_GAME);
                     Task updateStatus = FikaRequestHandler.UpdateSetStatus(status);
-
+                    
+                    FikaPlugin.Instance.FikaLogger.LogDebug("[CoopGame] Waiting for host status update as server");
                     while (!updateStatus.IsCompleted)
                     {
                         yield return null;
                     }
 
+                    FikaPlugin.Instance.FikaLogger.LogDebug("[CoopGame] Potentially infinite loop, waiting for players as server");
                     do
                     {
                         yield return null;
@@ -720,10 +722,20 @@ namespace Fika.Core.Coop.GameMode
 
                     FikaServer server = Singleton<FikaServer>.Instance;
                     server.ReadyClients++;
+                    
+                    if (!server.ConnectedGroups.TryGetValue(FikaGroupUtils.GroupId, out var groupInfo))
+                    {
+                        // By now we expect all members to be connected, so this code should never be run.
+                        // However, to avoid causing issues it'll allow the game to continue even if something
+                        // has gone wrong.
+                        groupInfo = [FikaGroupUtils.GroupSize, FikaGroupUtils.GroupSize];
+                    }
+                    
                     InformationPacket packet = new()
                     {
-                        NumberOfPlayers = server.NetServer.ConnectedPeersCount,
-                        ReadyPlayers = server.ReadyClients
+                        NumberOfPlayers = groupInfo[0],
+                        ReadyPlayers = groupInfo[1],
+                        GroupId = FikaGroupUtils.GroupId
                     };
                     writer.Reset();
                     server.SendDataToAll(writer, ref packet, LiteNetLib.DeliveryMethod.ReliableOrdered);
@@ -757,7 +769,8 @@ namespace Fika.Core.Coop.GameMode
                     FikaClient client = Singleton<FikaClient>.Instance;
                     InformationPacket packet = new(true)
                     {
-                        ReadyPlayers = 1
+                        ReadyPlayers = 1,
+                        GroupId = FikaGroupUtils.GroupId
                     };
                     writer.Reset();
                     client.SendData(writer, ref packet, LiteNetLib.DeliveryMethod.ReliableOrdered);
@@ -1077,9 +1090,14 @@ namespace Fika.Core.Coop.GameMode
             {
                 FikaServer server = Singleton<FikaServer>.Instance;
 
+                if (!server.ConnectedGroups.TryGetValue(FikaGroupUtils.GroupId, out int[] groupInfo))
+                {
+                    groupInfo = [FikaGroupUtils.GroupSize, 1]; // 1 since the server is ready
+                }
+            
                 do
                 {
-                    numbersOfPlayersToWaitFor = FikaBackendUtils.HostExpectedNumberOfPlayers - (server.NetServer.ConnectedPeersCount + 1);
+                    numbersOfPlayersToWaitFor = FikaBackendUtils.HostExpectedNumberOfPlayers - groupInfo[1];
                     if (FikaBackendUtils.ScreenController != null)
                     {
                         if (numbersOfPlayersToWaitFor > 0)
@@ -1128,7 +1146,10 @@ namespace Fika.Core.Coop.GameMode
                     await Task.Delay(500);
                 }
 
-                InformationPacket packet = new(true);
+                InformationPacket packet = new(true)
+                {
+                    GroupId = FikaGroupUtils.GroupId
+                };
                 NetDataWriter writer = new();
                 writer.Reset();
                 client.SendData(writer, ref packet, LiteNetLib.DeliveryMethod.ReliableOrdered);
@@ -1150,7 +1171,11 @@ namespace Fika.Core.Coop.GameMode
                     {
                         Logger.LogError("WaitForPlayers::GClass3163 was null!");
                     }
-                    packet = new(true);
+
+                    packet = new(true)
+                    {
+                        GroupId = FikaGroupUtils.GroupId
+                    };
                     writer.Reset();
                     client.SendData(writer, ref packet, LiteNetLib.DeliveryMethod.ReliableOrdered);
                     await Task.Delay(1000);
