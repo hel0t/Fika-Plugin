@@ -8,7 +8,6 @@ using Fika.Core.UI.Custom;
 
 namespace Fika.Core.Coop.Utils
 {
-
     public static class FikaBackendUtils
     {
         public static MatchMakerAcceptScreen MatchMakerAcceptScreenInstance;
