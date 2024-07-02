@@ -68,7 +68,7 @@ namespace Fika.Core.Coop.GameMode
         private Coroutine extractRoutine;
         private SpawnPointManagerClass spawnPoints = null;
         private ISpawnPoint spawnPoint = null;
-        private BossSpawnWaveManagerClass BossSpawnWaveManagerClass;
+        private BossSpawnWaveManagerClass bossSpawnWaveManager;
         private WavesSpawnScenario wavesSpawnScenario_0;
         private NonWavesSpawnScenario nonWavesSpawnScenario_0;
         private Func<Player, EftGamePlayerOwner> func_1;
@@ -151,7 +151,7 @@ namespace Fika.Core.Coop.GameMode
             coopGame.wavesSpawnScenario_0 = WavesSpawnScenario.smethod_0(coopGame.gameObject, waves, new Action<BotWaveDataClass>(coopGame.botsController_0.ActivateBotsByWave), location);
 
             BossLocationSpawn[] bossSpawns = LocalGame.smethod_8(wavesSettings, location.BossLocationSpawn);
-            coopGame.BossSpawnWaveManagerClass = BossSpawnWaveManagerClass.smethod_0(bossSpawns, new Action<BossLocationSpawn>(coopGame.botsController_0.ActivateBotsByWave));
+            coopGame.bossSpawnWaveManager = BossSpawnWaveManagerClass.smethod_0(bossSpawns, new Action<BossLocationSpawn>(coopGame.botsController_0.ActivateBotsByWave));
 
             if (useCustomWeather && coopGame.isServer)
             {
@@ -1250,7 +1250,7 @@ namespace Fika.Core.Coop.GameMode
             if (isServer)
             {
                 BotsPresets profileCreator = new(BackEndSession, wavesSpawnScenario_0.SpawnWaves,
-                    BossSpawnWaveManagerClass.BossSpawnWaves, nonWavesSpawnScenario_0.GClass1478_0, false);
+                    bossSpawnWaveManager.BossSpawnWaves, nonWavesSpawnScenario_0.GClass1478_0, false);
 
                 GClass814 botCreator = new(this, profileCreator, CreateBot);
                 BotZone[] botZones = LocationScene.GetAllObjects<BotZone>(false).ToArray();
@@ -1259,7 +1259,7 @@ namespace Fika.Core.Coop.GameMode
 
                 botsController_0.Init(this, botCreator, botZones, spawnSystem, wavesSpawnScenario_0.BotLocationModifier,
                     controllerSettings.IsEnabled, controllerSettings.IsScavWars, enableWaves, false,
-                    BossSpawnWaveManagerClass.HaveSectants, Singleton<GameWorld>.Instance, Location_0.OpenZones);
+                    bossSpawnWaveManager.HaveSectants, Singleton<GameWorld>.Instance, Location_0.OpenZones);
 
                 Logger.LogInfo($"Location: {Location_0.Name}");
 
@@ -1378,7 +1378,7 @@ namespace Fika.Core.Coop.GameMode
                     }
                 }
 
-                BossSpawnWaveManagerClass.Run(EBotsSpawnMode.Anyway);
+                bossSpawnWaveManager.Run(EBotsSpawnMode.Anyway);
 
                 FikaPlugin.DynamicAI.SettingChanged += DynamicAI_SettingChanged;
                 FikaPlugin.DynamicAIRate.SettingChanged += DynamicAIRate_SettingChanged;
@@ -1393,9 +1393,9 @@ namespace Fika.Core.Coop.GameMode
                 {
                     nonWavesSpawnScenario_0.Stop();
                 }
-                if (BossSpawnWaveManagerClass != null)
+                if (bossSpawnWaveManager != null)
                 {
-                    BossSpawnWaveManagerClass.Stop();
+                    bossSpawnWaveManager.Stop();
                 }
             }
 
@@ -1857,9 +1857,9 @@ namespace Fika.Core.Coop.GameMode
                 botsController_0.DestroyInfo(gparam_0.Player);
             }
 
-            if (BossSpawnWaveManagerClass != null)
+            if (bossSpawnWaveManager != null)
             {
-                BossSpawnWaveManagerClass.Stop();
+                bossSpawnWaveManager.Stop();
             }
             if (nonWavesSpawnScenario_0 != null)
             {
@@ -2034,9 +2034,9 @@ namespace Fika.Core.Coop.GameMode
                 Destroy(CoopHandler.CoopHandlerParent);
             }
 
-            if (BossSpawnWaveManagerClass != null)
+            if (bossSpawnWaveManager != null)
             {
-                BossSpawnWaveManagerClass.Stop();
+                bossSpawnWaveManager.Stop();
             }
             if (nonWavesSpawnScenario_0 != null)
             {
