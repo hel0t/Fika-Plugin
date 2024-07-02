@@ -233,7 +233,7 @@ namespace Fika.Core
             BundleLoaderPlugin.Create();
 
             FikaAirdropUtil.GetConfigFromServer();
-            BotSettingsRepoClass.Init();
+            BotSettingsRepoAbstractClass.Init();
 
             if (AllowItemSending)
             {

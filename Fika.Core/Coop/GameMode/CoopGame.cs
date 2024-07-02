@@ -67,9 +67,9 @@ namespace Fika.Core.Coop.GameMode
 
         private readonly Dictionary<int, int> botQueue = [];
         private Coroutine extractRoutine;
-        private GClass2949 spawnPoints = null;
+        private ISpawnPoints spawnPoints = null;
         private ISpawnPoint spawnPoint = null;
-        private GClass579 GClass579;
+        private BossSpawnWaveManagerClass bossSpawnWaveManager;
         private WavesSpawnScenario wavesSpawnScenario_0;
         private NonWavesSpawnScenario nonWavesSpawnScenario_0;
         private Func<Player, EftGamePlayerOwner> func_1;
@@ -152,7 +152,7 @@ namespace Fika.Core.Coop.GameMode
             coopGame.wavesSpawnScenario_0 = WavesSpawnScenario.smethod_0(coopGame.gameObject, waves, new Action<BotWaveDataClass>(coopGame.botsController_0.ActivateBotsByWave), location);
 
             BossLocationSpawn[] bossSpawns = LocalGame.smethod_8(wavesSettings, location.BossLocationSpawn);
-            coopGame.GClass579 = GClass579.smethod_0(bossSpawns, new Action<BossLocationSpawn>(coopGame.botsController_0.ActivateBotsByWave));
+            coopGame.bossSpawnWaveManager = BossSpawnWaveManagerClass.smethod_0(bossSpawns, new Action<BossLocationSpawn>(coopGame.botsController_0.ActivateBotsByWave));
 
             if (useCustomWeather && coopGame.isServer)
             {
@@ -222,7 +222,7 @@ namespace Fika.Core.Coop.GameMode
                 return;
             }
 
-            DateTime dateTime = GClass1304.StartOfDay();
+            DateTime dateTime = EFTDateTimeClass.StartOfDay();
             DateTime dateTime2 = dateTime.AddDays(1);
 
             WeatherClass weather = WeatherClass.CreateDefault();
@@ -238,7 +238,7 @@ namespace Fika.Core.Coop.GameMode
 
         public override void SetMatchmakerStatus(string status, float? progress = null)
         {
-            if (GClass3131.Instance.CurrentScreenController is MatchmakerTimeHasCome.GClass3187 gclass)
+            if (CurrentScreenSingleton.Instance.CurrentScreenController is MatchmakerTimeHasCome.TimeHasComeScreenClass gclass)
             {
                 gclass.ChangeStatus(status, progress);
             }
@@ -663,8 +663,8 @@ namespace Fika.Core.Coop.GameMode
             coopPlayer.PacketSender.Init();
 
             int timeBeforeDeployLocal = Singleton<BackendConfigSettingsClass>.Instance.TimeBeforeDeployLocal;
-            DateTime dateTime = GClass1304.Now.AddSeconds(timeBeforeDeployLocal);
-            new MatchmakerFinalCountdown.GClass3186(Profile_0, dateTime).ShowScreen(EScreenState.Root);
+            DateTime dateTime = EFTDateTimeClass.Now.AddSeconds(timeBeforeDeployLocal);
+            new MatchmakerFinalCountdown.FinalCountdownScreenClass(Profile_0, dateTime).ShowScreen(EScreenState.Root);
             MonoBehaviourSingleton<BetterAudio>.Instance.FadeInVolumeBeforeRaid(timeBeforeDeployLocal);
             Singleton<GUISounds>.Instance.StopMenuBackgroundMusicWithDelay(timeBeforeDeployLocal);
             GameUi.gameObject.SetActive(true);
@@ -981,7 +981,7 @@ namespace Fika.Core.Coop.GameMode
         public async Task InitPlayer(BotControllerSettings botsSettings, string backendUrl, Callback runCallback)
         {
             Status = GameStatus.Running;
-            UnityEngine.Random.InitState((int)GClass1304.Now.Ticks);
+            UnityEngine.Random.InitState((int)EFTDateTimeClass.Now.Ticks);
 
             LocationSettingsClass.Location location;
             if (Location_0.IsHideout)
@@ -990,11 +990,11 @@ namespace Fika.Core.Coop.GameMode
             }
             else
             {
-                using (GClass21.StartWithToken("LoadLocation"))
+                using (CounterCreatorAbstractClass.StartWithToken("LoadLocation"))
                 {
                     int num = UnityEngine.Random.Range(1, 6);
                     method_6(backendUrl, Location_0.Id, num);
-                    location = await ginterface158_0.LoadLocationLoot(Location_0.Id, num);
+                    location = await BackEndSession.LoadLocationLoot(Location_0.Id, num);
                 }
             }
 
@@ -1017,7 +1017,7 @@ namespace Fika.Core.Coop.GameMode
                 FixedDeltaTime = 1f / config.FixedFrameRate;
             }
 
-            using (GClass21.StartWithToken("player create"))
+            using (CounterCreatorAbstractClass.StartWithToken("player create"))
             {
                 Player player = await CreateLocalPlayer();
                 dictionary_0.Add(player.ProfileId, player);
@@ -1066,7 +1066,7 @@ namespace Fika.Core.Coop.GameMode
                 eupdateMode = Player.EUpdateMode.Manual;
             }
 
-            spawnPoints = GClass2949.CreateFromScene(new DateTime?(GClass1304.LocalDateTimeFromUnixTime(Location_0.UnixDateTime)), Location_0.SpawnPointParams);
+            spawnPoints = SpawnPointManagerClass.CreateFromScene(new DateTime?(EFTDateTimeClass.LocalDateTimeFromUnixTime(Location_0.UnixDateTime)), Location_0.SpawnPointParams);
             int spawnSafeDistance = (Location_0.SpawnSafeDistanceMeters > 0) ? Location_0.SpawnSafeDistanceMeters : 100;
             GStruct379 settings = new(Location_0.MinDistToFreePoint, Location_0.MaxDistToFreePoint, Location_0.MaxBotPerZone, spawnSafeDistance);
             SpawnSystem = GClass2950.CreateSpawnSystem(settings, new Func<float>(Class1384.class1384_0.method_0), Singleton<GameWorld>.Instance, zones: botsController_0, spawnPoints);
@@ -1254,7 +1254,7 @@ namespace Fika.Core.Coop.GameMode
             if (isServer)
             {
                 BotsPresets profileCreator = new(BackEndSession, wavesSpawnScenario_0.SpawnWaves,
-                    GClass579.BossSpawnWaves, nonWavesSpawnScenario_0.GClass1478_0, false);
+                    bossSpawnWaveManager.BossSpawnWaves, nonWavesSpawnScenario_0.GClass1478_0, false);
 
                 GClass814 botCreator = new(this, profileCreator, CreateBot);
                 BotZone[] botZones = LocationScene.GetAllObjects<BotZone>(false).ToArray();
@@ -1263,7 +1263,7 @@ namespace Fika.Core.Coop.GameMode
 
                 botsController_0.Init(this, botCreator, botZones, spawnSystem, wavesSpawnScenario_0.BotLocationModifier,
                     controllerSettings.IsEnabled, controllerSettings.IsScavWars, enableWaves, false,
-                    GClass579.HaveSectants, Singleton<GameWorld>.Instance, Location_0.OpenZones);
+                    bossSpawnWaveManager.HaveSectants, Singleton<GameWorld>.Instance, Location_0.OpenZones);
 
                 Logger.LogInfo($"Location: {Location_0.Name}");
 
@@ -1333,7 +1333,7 @@ namespace Fika.Core.Coop.GameMode
             BackendConfigSettingsClass instance = Singleton<BackendConfigSettingsClass>.Instance;
 
             LocalGame.Class1391 seasonTaskHandler = new();
-            ESeason season = ginterface158_0.Season;
+            ESeason season = BackEndSession.Season;
             Class394 seasonHandler = new();
             Singleton<GameWorld>.Instance.GInterface26_0 = seasonHandler;
             seasonTaskHandler.task = seasonHandler.Run(season);
@@ -1382,7 +1382,7 @@ namespace Fika.Core.Coop.GameMode
                     }
                 }
 
-                GClass579.Run(EBotsSpawnMode.Anyway);
+                bossSpawnWaveManager.Run(EBotsSpawnMode.Anyway);
 
                 FikaPlugin.DynamicAI.SettingChanged += DynamicAI_SettingChanged;
                 FikaPlugin.DynamicAIRate.SettingChanged += DynamicAIRate_SettingChanged;
@@ -1397,9 +1397,9 @@ namespace Fika.Core.Coop.GameMode
                 {
                     nonWavesSpawnScenario_0.Stop();
                 }
-                if (GClass579 != null)
+                if (bossSpawnWaveManager != null)
                 {
-                    GClass579.Stop();
+                    bossSpawnWaveManager.Stop();
                 }
             }
 
@@ -1498,7 +1498,7 @@ namespace Fika.Core.Coop.GameMode
         /// <param name="zone"></param>
         /// <param name="arg3"></param>
         /// <param name="arg4"></param>
-        private void OnBorderZoneShot(GInterface106 player, BorderZone zone, float arg3, bool arg4)
+        private void OnBorderZoneShot(IPlayerOwner player, BorderZone zone, float arg3, bool arg4)
         {
             BorderZonePacket packet = new()
             {
@@ -1564,7 +1564,7 @@ namespace Fika.Core.Coop.GameMode
             ExfiltrationControllerClass.Instance.InitAllExfiltrationPoints(Location_0.exits, !isServer, "");
             ExfiltrationPoint[] exfilPoints = ExfiltrationControllerClass.Instance.EligiblePoints(Profile_0);
 
-            GameUi.TimerPanel.SetTime(GClass1304.UtcNow, Profile_0.Info.Side, GameTimer.SessionSeconds(), exfilPoints);
+            GameUi.TimerPanel.SetTime(EFTDateTimeClass.UtcNow, Profile_0.Info.Side, GameTimer.SessionSeconds(), exfilPoints);
 
             exfilManager = gameObject.AddComponent<CoopExfilManager>();
             exfilManager.Run(exfilPoints);
@@ -1599,7 +1599,7 @@ namespace Fika.Core.Coop.GameMode
                 }
             }
 
-            dateTime_0 = GClass1304.Now;
+            dateTime_0 = EFTDateTimeClass.Now;
             Status = GameStatus.Started;
             ConsoleScreen.ApplyStartCommands();
         }
@@ -1627,7 +1627,7 @@ namespace Fika.Core.Coop.GameMode
             }
             currentExfils.Clear();
 
-            GameUi.TimerPanel.SetTime(GClass1304.UtcNow, Profile_0.Info.Side, GameTimer.SessionSeconds(), points);
+            GameUi.TimerPanel.SetTime(EFTDateTimeClass.UtcNow, Profile_0.Info.Side, GameTimer.SessionSeconds(), points);
         }
 
         /// <summary>
@@ -1712,7 +1712,7 @@ namespace Fika.Core.Coop.GameMode
             extractRoutine = StartCoroutine(ExtractRoutine(player));
 
             // Prevents players from looting after extracting
-            GClass3131.Instance.CloseAllScreensForced();
+            CurrentScreenSingleton.Instance.CloseAllScreensForced();
 
             // Detroys session timer
             if (timeManager != null)
@@ -1843,7 +1843,7 @@ namespace Fika.Core.Coop.GameMode
                 if (myPlayer.Equipment.GetSlot(EquipmentSlot.Dogtag).ContainedItem != null)
                 {
                     GStruct414<GClass2801> result = InteractionsHandlerClass.Remove(myPlayer.Equipment.GetSlot(EquipmentSlot.Dogtag).ContainedItem,
-                        myPlayer.GClass2777_0, false, true);
+                        myPlayer.InventoryControllerClass, false, true);
                     if (result.Error != null)
                     {
                         Logger.LogError("Stop: Error removing dog tag!");
@@ -1870,9 +1870,9 @@ namespace Fika.Core.Coop.GameMode
                 botsController_0.DestroyInfo(gparam_0.Player);
             }
 
-            if (GClass579 != null)
+            if (bossSpawnWaveManager != null)
             {
-                GClass579.Stop();
+                bossSpawnWaveManager.Stop();
             }
             if (nonWavesSpawnScenario_0 != null)
             {
@@ -2006,7 +2006,7 @@ namespace Fika.Core.Coop.GameMode
                 if (myPlayer.Equipment.GetSlot(EquipmentSlot.Dogtag).ContainedItem != null)
                 {
                     GStruct414<GClass2801> result = InteractionsHandlerClass.Remove(myPlayer.Equipment.GetSlot(EquipmentSlot.Dogtag).ContainedItem,
-                        myPlayer.GClass2777_0, false, true);
+                        myPlayer.InventoryControllerClass, false, true);
                     if (result.Error != null)
                     {
                         Logger.LogWarning("StopFromError: Error removing dog tag!");
@@ -2047,9 +2047,9 @@ namespace Fika.Core.Coop.GameMode
                 Destroy(CoopHandler.CoopHandlerParent);
             }
 
-            if (GClass579 != null)
+            if (bossSpawnWaveManager != null)
             {
-                GClass579.Stop();
+                bossSpawnWaveManager.Stop();
             }
             if (nonWavesSpawnScenario_0 != null)
             {
@@ -2212,7 +2212,7 @@ namespace Fika.Core.Coop.GameMode
 
             public void HandleExit()
             {
-                GClass3131 screenManager = GClass3131.Instance;
+                CurrentScreenSingleton screenManager = CurrentScreenSingleton.Instance;
                 if (screenManager.CheckCurrentScreen(EEftScreenType.Reconnect))
                 {
                     screenManager.CloseAllScreensForced();
@@ -2220,8 +2220,8 @@ namespace Fika.Core.Coop.GameMode
                 localGame.gparam_0.Player.OnGameSessionEnd(exitStatus, localGame.PastTime, localGame.Location_0.Id, exitName);
                 localGame.CleanUp();
                 localGame.Status = GameStatus.Stopped;
-                TimeSpan timeSpan = GClass1304.Now - localGame.dateTime_0;
-                localGame.ginterface158_0.OfflineRaidEnded(exitStatus, exitName, timeSpan.TotalSeconds).HandleExceptions();
+                TimeSpan timeSpan = EFTDateTimeClass.Now - localGame.dateTime_0;
+                localGame.BackEndSession.OfflineRaidEnded(exitStatus, exitName, timeSpan.TotalSeconds).HandleExceptions();
                 MonoBehaviourSingleton<BetterAudio>.Instance.FadeOutVolumeAfterRaid();
                 StaticManager staticManager = StaticManager.Instance;
                 float num = delay;
@@ -2235,7 +2235,7 @@ namespace Fika.Core.Coop.GameMode
 
                 localGame.SavePlayer(localPlayer, exitStatus, exitName, false);
 
-                endCallback(new Result<ExitStatus, TimeSpan, MetricsClass>(exitStatus, GClass1304.Now - localGame.dateTime_0, new MetricsClass()));
+                endCallback(new Result<ExitStatus, TimeSpan, MetricsClass>(exitStatus, EFTDateTimeClass.Now - localGame.dateTime_0, new MetricsClass()));
                 UIEventSystem.Instance.Enable();
             }
         }
@@ -2247,7 +2247,7 @@ namespace Fika.Core.Coop.GameMode
         {
             public void ExitOverride()
             {
-                GClass3131 instance = GClass3131.Instance;
+                CurrentScreenSingleton instance = CurrentScreenSingleton.Instance;
                 if (instance != null && instance.CheckCurrentScreen(EEftScreenType.Reconnect))
                 {
                     instance.CloseAllScreensForced();

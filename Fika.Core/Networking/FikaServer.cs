@@ -97,7 +97,6 @@ namespace Fika.Core.Networking
             packetProcessor.SubscribeNetSerializable<WeatherPacket, NetPeer>(OnWeatherPacketReceived);
             packetProcessor.SubscribeNetSerializable<BTRInteractionPacket, NetPeer>(OnBTRInteractionPacketReceived);
             packetProcessor.SubscribeNetSerializable<BTRServicePacket, NetPeer>(OnBTRServicePacketReceived);
-            packetProcessor.SubscribeNetSerializable<DeathPacket, NetPeer>(OnDeathPacketReceived);
             packetProcessor.SubscribeNetSerializable<MinePacket, NetPeer>(OnMinePacketReceived);
             packetProcessor.SubscribeNetSerializable<BorderZonePacket, NetPeer>(OnBorderZonePacketReceived);
             packetProcessor.SubscribeNetSerializable<SendCharacterPacket, NetPeer>(OnSendCharacterPacketReceived);
@@ -234,7 +233,7 @@ namespace Fika.Core.Networking
 
             if (MyPlayer.HealthController.IsAlive)
             {
-                if (MyPlayer.GClass3227_0 is CoopClientSharedQuestController sharedQuestController)
+                if (MyPlayer.AbstractQuestControllerClass is CoopClientSharedQuestController sharedQuestController)
                 {
                     sharedQuestController.ReceiveQuestItemPacket(ref packet);
                 }
@@ -248,7 +247,7 @@ namespace Fika.Core.Networking
 
             if (MyPlayer.HealthController.IsAlive)
             {
-                if (MyPlayer.GClass3227_0 is CoopClientSharedQuestController sharedQuestController)
+                if (MyPlayer.AbstractQuestControllerClass is CoopClientSharedQuestController sharedQuestController)
                 {
                     sharedQuestController.ReceiveQuestPacket(ref packet);
                 }
@@ -325,17 +324,6 @@ namespace Fika.Core.Networking
                 }
                 mineDirectional.Explosion();
             }
-        }
-
-        private void OnDeathPacketReceived(DeathPacket packet, NetPeer peer)
-        {
-            if (Players.TryGetValue(packet.NetId, out CoopPlayer playerToApply))
-            {
-                playerToApply.HandleDeathPatchet(packet);
-            }
-
-            _dataWriter.Reset();
-            SendDataToAll(_dataWriter, ref packet, DeliveryMethod.ReliableOrdered, peer);
         }
 
         private void OnBTRServicePacketReceived(BTRServicePacket packet, NetPeer peer)
@@ -623,7 +611,7 @@ namespace Fika.Core.Networking
 
                     // TODO: Hacky workaround to fix errors due to each client generating new IDs. Might need to find a more 'elegant' solution later.
                     // Unknown what problems this might cause so far.
-                    if (result.Value is GClass2878 unloadOperation)
+                    if (result.Value is UnloadOperationClass unloadOperation)
                     {
                         if (unloadOperation.InternalOperation is SplitOperationClass internalSplitOperation)
                         {

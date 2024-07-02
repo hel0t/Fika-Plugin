@@ -29,7 +29,7 @@ namespace Fika.Core.Coop.Utils
         private static string _serverId;
         private static string _raidCode;
 
-        public static MatchmakerTimeHasCome.GClass3187 ScreenController;
+        public static MatchmakerTimeHasCome.TimeHasComeScreenClass ScreenController;
         public static RaidSettings RaidSettings { get; set; }
         public static MatchMakerUIScript MatchMakerUIScript;
 
