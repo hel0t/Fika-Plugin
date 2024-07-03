@@ -39,10 +39,7 @@ namespace Fika.Core.Networking.Http.Models
         [DataMember(Name = "time")]
         public EDateTime Time;
 
-        [DataMember(Name = "natPunch")]
-        public bool NatPunch;
-
-        public CreateMatch(string raidCode, string serverId, string hostUsername, long timestamp, RaidSettings settings, int expectedNumberOfPlayers, ESideType side, EDateTime time, bool natPunch)
+        public CreateMatch(string raidCode, string serverId, string hostUsername, long timestamp, RaidSettings settings, int expectedNumberOfPlayers, ESideType side, EDateTime time)
         {
             RaidCode = raidCode;
             ServerId = serverId;
@@ -54,7 +51,6 @@ namespace Fika.Core.Networking.Http.Models
             FikaVersion = Assembly.GetExecutingAssembly().GetName().Version;
             Side = side;
             Time = time;
-            NatPunch = natPunch;
         }
     }
 }
