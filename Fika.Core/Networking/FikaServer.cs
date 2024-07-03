@@ -73,7 +73,8 @@ namespace Fika.Core.Networking
             }
         }
         private FikaChat fikaChat;
-        public FikaNatPunchServer NatPunchServer;
+        public FikaNatPunchServer FikaNatPunchServer;
+        private CancellationTokenSource StunQueryRoutineCts;
 
         public async Task Init()
         {
@@ -115,7 +116,7 @@ namespace Fika.Core.Networking
                 EnableStatistics = true
             };
             
-            if (FikaPlugin.UseUPnP.Value && !FikaPlugin.NatPunch.Value)
+            if (FikaPlugin.UseUPnP.Value && !FikaPlugin.UseNatPunching.Value)
             {
                 bool upnpFailed = false;
 
@@ -159,14 +160,19 @@ namespace Fika.Core.Networking
                 }
             }
 
-            if (FikaPlugin.NatPunch.Value)
+            if(FikaPlugin.UseNatPunching.Value)
             {
-                NatPunchServer = new FikaNatPunchServer(_netServer);
-                NatPunchServer.Connect();
+                FikaNatPunchServer = new FikaNatPunchServer(_netServer);
+                FikaNatPunchServer.Connect();
 
-                if(!NatPunchServer.Connected)
+                if (FikaNatPunchServer.Connected)
                 {
-                    Singleton<PreloaderUI>.Instance.ShowErrorScreen("Network Error", "Error when trying to connect to FikaNatPunchRelayService. Please ensure FikaNatPunchRelayService is enabled and the port is open.");
+                    StunQueryRoutineCts = new CancellationTokenSource();
+                    Task stunQueryRoutine = Task.Run(() => NatPunchUtils.StunQueryRoutine(_netServer, FikaNatPunchServer, StunQueryRoutineCts.Token));
+                }
+                else
+                {
+                    logger.LogError("Unable to connect to FikaNatPunchRelayService.");
                 }
             }
             else
@@ -183,14 +189,7 @@ namespace Fika.Core.Networking
 
             logger.LogInfo("Started Fika Server");
 
-            string serverStartedMessage;
-
-            if (FikaPlugin.NatPunch.Value)
-                serverStartedMessage = "Server started with Nat Punching enabled.";
-            else
-                serverStartedMessage = $"Server started on port {_netServer.LocalPort}.";
-
-            NotificationManagerClass.DisplayMessageNotification(serverStartedMessage,
+            NotificationManagerClass.DisplayMessageNotification($"Server started on port {_netServer.LocalPort}.",
                 EFT.Communications.ENotificationDurationType.Default, EFT.Communications.ENotificationIconType.EntryPoint);
 
             string[] Ips = [];
@@ -210,7 +209,7 @@ namespace Fika.Core.Networking
                 iconType: EFT.Communications.ENotificationIconType.Alert);
             }
 
-            SetHostRequest body = new(Ips, Port, FikaPlugin.NatPunch.Value);
+            SetHostRequest body = new(Ips, Port, FikaPlugin.UseNatPunching.Value);
             FikaRequestHandler.UpdateSetHost(body);
 
             FikaEventDispatcher.DispatchEvent(new FikaServerCreatedEvent(this));
@@ -810,7 +809,11 @@ namespace Fika.Core.Networking
                             resp = new();
                             resp.Put(data);
                             _netServer.SendUnconnectedMessage(resp, remoteEndPoint);
-                            NetManagerUtils.StopServerStunQuery();
+                            
+                            if(!StunQueryRoutineCts.IsCancellationRequested)
+                            {
+                                StunQueryRoutineCts.Cancel();
+                            }
                             break;
 
                         default:
