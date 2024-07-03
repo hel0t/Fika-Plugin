@@ -924,6 +924,11 @@ namespace Fika.Core.Coop.GameMode
 
             await WaitForPlayers();
 
+            if (isServer)
+            {
+                Singleton<FikaServer>.Instance.NatPunchServer.Close();
+            }
+
             fikaDebug = gameObject.AddComponent<FikaDebug>();
 
             Destroy(customButton);

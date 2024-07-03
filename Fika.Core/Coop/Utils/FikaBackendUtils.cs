@@ -22,6 +22,7 @@ namespace Fika.Core.Coop.Utils
         public static WeatherClass[] Nodes = null;
         public static string RemoteIp;
         public static int RemotePort;
+        public static int LocalPort = 0;
         private static string _serverId;
         private static string _raidCode;
 
@@ -83,7 +84,7 @@ namespace Fika.Core.Coop.Utils
             long timestamp = DateTimeOffset.Now.ToUnixTimeSeconds();
             string raidCode = GenerateRaidCode(6);
             CreateMatch body = new CreateMatch(raidCode, profileId, hostUsername, timestamp, raidSettings,
-                HostExpectedNumberOfPlayers, raidSettings.Side, raidSettings.SelectedDateTime);
+                HostExpectedNumberOfPlayers, raidSettings.Side, raidSettings.SelectedDateTime, FikaPlugin.NatPunch.Value);
 
             FikaRequestHandler.RaidCreate(body);
 
