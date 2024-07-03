@@ -4,6 +4,7 @@ using Fika.Core.Networking.Http;
 using Fika.Core.Networking.Http.Models;
 using System;
 using System.Reflection;
+using Fika.Core.EssentialPatches;
 
 namespace Fika.Core.Coop.Utils
 {
@@ -76,7 +77,7 @@ namespace Fika.Core.Coop.Utils
             }
 
             SetRaidCode(result.RaidCode);
-            
+
             return true;
         }
 
@@ -84,11 +85,12 @@ namespace Fika.Core.Coop.Utils
         {
             long timestamp = DateTimeOffset.Now.ToUnixTimeSeconds();
             string raidCode = GenerateRaidCode(6);
-            CreateMatch body = new CreateMatch(raidCode, profileId, hostUsername, timestamp, raidSettings,
+            CreateMatch body = new(raidCode, profileId, hostUsername, timestamp, raidSettings,
                 HostExpectedNumberOfPlayers, raidSettings.Side, raidSettings.SelectedDateTime);
 
             FikaRequestHandler.RaidCreate(body);
 
+            SetRaidCode(raidCode);
             SetServerId(profileId);
             MatchingType = EMatchingType.GroupLeader;
             
@@ -97,7 +99,7 @@ namespace Fika.Core.Coop.Utils
 
         public static string GenerateRaidCode(int length)
         {
-            Random random = new Random();
+            Random random = new();
             char[] chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".ToCharArray();
             string raidCode = "";
             for (int i = 0; i < length; i++)
