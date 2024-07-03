@@ -934,7 +934,7 @@ namespace Fika.Core.Coop.GameMode
 
             await WaitForPlayers();
 
-            if (isServer)
+            if (isServer && FikaPlugin.NatPunch.Value)
             {
                 Singleton<FikaServer>.Instance.NatPunchServer.Close();
             }
