@@ -90,7 +90,7 @@ namespace Fika.Core
 
         // Hidden
         public static ConfigEntry<bool> AcceptedTOS { get; set; }
-        
+
         //Advanced
         public static ConfigEntry<bool> OfficialVersion { get; set; }
 
@@ -190,7 +190,7 @@ namespace Fika.Core
 
             SetupConfig();
 
-            new FikaVersionLabel_Patch().Enable();
+            // new FikaVersionLabel_Patch().Enable();
             new DisableReadyButton_Patch().Enable();
             new DisableInsuranceReadyButton_Patch().Enable();
             new DisableMatchSettingsReadyButton_Patch().Enable();
