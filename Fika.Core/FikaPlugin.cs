@@ -212,6 +212,7 @@ namespace Fika.Core
             new InventoryScroll_Patch().Enable();
             new AbstractGame_InRaid_Patch().Enable();
             new DisconnectButton_Patch().Enable();
+            new ChangeGameModeButton_Patch().Enable();
 #if GOLDMASTER
             new TOS_Patch().Enable();
 #endif
@@ -484,6 +485,7 @@ namespace Fika.Core
             new DogtagPatch().Disable();
             new OfflineSaveProfilePatch().Disable(); // We handle this with our own exit manager
             new ScavRepAdjustmentPatch().Disable();
+            new DisablePvEPatch().Disable();
 
             new BTRInteractionPatch().Disable();
             new BTRExtractPassengersPatch().Disable();
