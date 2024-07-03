@@ -5,77 +5,47 @@ using Fika.Core.Networking.Http.Models;
 using System;
 using System.Linq;
 using System.Reflection;
-using Fika.Core.EssentialPatches;
-using UnityEngine;
-using Random = System.Random;
 
 namespace Fika.Core.Coop.Utils
 {
-    public enum EMatchmakerType
-    {
-        Single = 0,
-        GroupPlayer = 1,
-        GroupLeader = 2
-    }
-
     public static class FikaBackendUtils
     {
-        #region Fields/Properties
         public static MatchMakerAcceptScreen MatchMakerAcceptScreenInstance;
         public static Profile Profile;
         public static string PMCName;
-        public static EMatchmakerType MatchingType = EMatchmakerType.Single;
-        public static bool IsServer => MatchingType == EMatchmakerType.GroupLeader;
-        public static bool IsClient => MatchingType == EMatchmakerType.GroupPlayer;
-        public static bool IsSinglePlayer => MatchingType == EMatchmakerType.Single;
-        public static PlayersRaidReadyPanel PlayersRaidReadyPanel { get; set; }
-        public static MatchMakerGroupPreview MatchMakerGroupPreview { get; set; }
-        public static int HostExpectedNumberOfPlayers { get; set; } = 1;
-        public static WeatherClass[] Nodes { get; set; } = null;
+        public static EMatchingType MatchingType = EMatchingType.Single;
+        public static bool IsServer => MatchingType == EMatchingType.GroupLeader;
+        public static bool IsClient => MatchingType == EMatchingType.GroupPlayer;
+        public static bool IsSinglePlayer => MatchingType == EMatchingType.Single;
+        public static PlayersRaidReadyPanel PlayersRaidReadyPanel;
+        public static MatchMakerGroupPreview MatchMakerGroupPreview;
+        public static int HostExpectedNumberOfPlayers = 1;
+        public static WeatherClass[] Nodes = null;
         public static string RemoteIp;
         public static int RemotePort;
-        private static string groupId;
-        private static long timestamp;
-        #endregion
+        private static string _serverId;
+        private static string _raidCode;
 
-        #region Static Fields
+        public static MatchmakerTimeHasCome.GClass3187 ScreenController;
 
-        public static object MatchmakerScreenController
+        public static string GetServerId()
         {
-            get
-            {
-                object screenController = typeof(MatchMakerAcceptScreen).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).Where(x => x.Name == "ScreenController")
-                    .FirstOrDefault().GetValue(MatchMakerAcceptScreenInstance);
-                if (screenController != null)
-                {
-                    return screenController;
-                }
-                return null;
-            }
+            return _serverId;
         }
 
-        public static GameObject EnvironmentUIRoot { get; internal set; }
-        public static MatchmakerTimeHasCome.GClass3187 ScreenController { get; internal set; }
-        #endregion
-
-        public static string GetGroupId()
+        public static void SetServerId(string newId)
         {
-            return groupId;
+            _serverId = newId;
         }
 
-        public static void SetGroupId(string newId)
+        public static void SetRaidCode(string newCode)
         {
-            groupId = newId;
+            _raidCode = newCode;
         }
 
-        public static long GetTimestamp()
+        public static string GetRaidCode()
         {
-            return timestamp;
-        }
-
-        public static void SetTimestamp(long ts)
-        {
-            timestamp = ts;
+            return _raidCode;
         }
 
         public static bool JoinMatch(string profileId, string serverId, out CreateMatch result, out string errorMessage)
@@ -104,7 +74,7 @@ namespace Fika.Core.Coop.Utils
                 return false;
             }
 
-            FikaVersionLabelUpdate_Patch.raidCode = result.RaidCode;
+            SetRaidCode(result.RaidCode);
             
             return true;
         }
@@ -117,11 +87,10 @@ namespace Fika.Core.Coop.Utils
 
             FikaRequestHandler.RaidCreate(body);
 
-            SetGroupId(profileId);
-            SetTimestamp(timestamp);
-            MatchingType = EMatchmakerType.GroupLeader;
+            SetServerId(profileId);
+            MatchingType = EMatchingType.GroupLeader;
             
-            FikaVersionLabelUpdate_Patch.raidCode = raidCode;
+            SetRaidCode(raidCode);
         }
 
         private static string GenerateRaidCode(int length)
