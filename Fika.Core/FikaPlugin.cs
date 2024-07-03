@@ -264,6 +264,7 @@ namespace Fika.Core
             AllowItemSending = clientConfig.AllowItemSending;
             BlacklistedItems = clientConfig.BlacklistedItems;
             ForceSaveOnDeath = clientConfig.ForceSaveOnDeath;
+            UseInertia = clientConfig.UseInertia;
 
             clientConfig.ToString();
         }
